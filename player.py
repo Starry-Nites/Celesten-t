@@ -1,5 +1,6 @@
 import pygame
 from support import importSprite
+import math
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -12,7 +13,8 @@ class Player(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         # player movement
         self.direction = pygame.math.Vector2(0, 0)
-        self.speed = 3
+        self.speed_x = 3
+        self.speed_y = 3
         self.jump_move = -10
         # player stats
         self.life = 5
@@ -28,7 +30,6 @@ class Player(pygame.sprite.Sprite):
         self.on_right = False
         self.climbing = False
         self.dashing = False
-        self.isHittingWall = False
         self.clock = pygame.time.Clock()
         self.current_time = 0
         self.last_dash_time = 0
@@ -63,15 +64,12 @@ class Player(pygame.sprite.Sprite):
             self.image = flipped_image
 
         elif self.facing_up:
-            flipped_image = pygame.transform.flip(image, True, False)
-            self.image = flipped_image
+            self.image = self.image
         
         if self.on_ground and self.on_right:
-            self.rect = self.image.get_rect(bottomright=self.rect.bottomright)
-            self.isHittingWall = True
+            self.rect = self.image.get_rect(bottomright=self.rect.bottomright)          
         elif self.on_ground and self.on_left:
             self.rect = self.image.get_rect(bottomleft=self.rect.bottomleft)
-            self.isHittingWall = True
         elif self.on_ground:
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
             
@@ -85,49 +83,73 @@ class Player(pygame.sprite.Sprite):
             self.rect = self.image.get_rect(midtop=self.rect.midtop)
 
     def _get_input(self, player_event):
-        
-        if player_event[pygame.K_e] and self.isHittingWall:
-            self.climbing = True
 
-        elif player_event[pygame.K_d]:
-            
-            self.direction.x = 1
+        if player_event[pygame.K_w]:
+            self.direction.x = 0 #-1 * self.direction.x
+            self.facing_up = True
             self.facing_left = False
-            self.facing_right = True
-            self.facing_up = False
-        elif player_event[pygame.K_a]:
+            self.facing_right = False
+
+        if player_event[pygame.K_a]:
             self.direction.x = -1
             self.facing_right = False
             self.facing_left = True
             self.facing_up = False
-        elif player_event[pygame.K_w]:
-            self.facing_up = True
+
+        elif player_event[pygame.K_d] or player_event[pygame.K_LEFT]:            
+            self.direction.x = 1
             self.facing_left = False
-            self.facing_right = False
+            self.facing_right = True
+            self.facing_up = False
+        
         else:
             self.direction.x = 0
+
+        if player_event[pygame.K_LSHIFT] or player_event[pygame.K_RSHIFT]:
+           self._dash()
+
+        if player_event[pygame.K_SPACE] and self.on_ground:
+            self._jump()
+            
+        if player_event[pygame.K_w] and (self.on_left or self.on_right):
+            print("Going up!")
+            self.climbing = True
+            self._climb("up")
+        elif player_event[pygame.K_s] and (self.on_left or self.on_right):
+            self._climb("down")
+            self.climbing = True
+        
+        else:
+            self.climbing = False
 
         
     def _jump(self):
         self.direction.y = self.jump_move
 
     def _climb(self, player_event):
-        if player_event[pygame.K_w] and self.climbing:
-            self.direction.y = -1
-        if player_event[pygame.K_s] and self.climbing:
+        print("CLIMB!!")
+        if player_event == "up":
+            self.direction.y = -6
+            print(self.direction.y)
+            print("I should be climbing")
+        if player_event == "down":
             self.direction.y = 1
+            print(self.direction.y)
+            print("I should be climbing")
 
     def _dash(self):
         DASH_COOLDOWN = 500
         if self.current_time - self.last_dash_time > DASH_COOLDOWN:
             if self.facing_up:
-                self.direction.y = -20
+                print("I should be dashing up rn")
+                self.direction.y = -15
                 
             if self.facing_right:
-                self.direction.x = 7
-
+                for i in range(30):
+                    self.direction.x += 1
             if self.facing_left:
-                self.direction.x = -7
+                for i in range(30):
+                    self.direction.x -= 1
 
             self.last_dash_time = self.current_time
         
@@ -150,14 +172,9 @@ class Player(pygame.sprite.Sprite):
         self._get_status()
         self.current_time = pygame.time.get_ticks()
         if self.life > 0 and not self.game_over:
-            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-                self._dash()
-            if keys[pygame.K_e]:
-                self._climb(keys)
-            if keys[pygame.K_SPACE] and self.on_ground:
-                self._jump()
-            else:
-                self._get_input(keys)
+            self._get_input(keys)
+            
+        
         elif self.game_over and self.win:
             self.direction.x = 0
             self.status = 'win'

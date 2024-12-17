@@ -11,11 +11,8 @@ def randomizeBlocks():
         # If the randint was 1-4, make a block with empty space directly after it.
         # The addition of the empty space along with the theoretical probability of this option being chosen
         # means that it will be extremely unlikely that the player will be trapped on a floor.
-        if tile == 1 or tile == 2 or tile == 3 or tile == 4:
-            finTiles += "X "
-
         # If the randint was 5-7, make a regular block with no space after it. This is the second most probable option.
-        elif tile == 5 or tile == 6 or tile == 7:
+        if tile <= 7:
             finTiles += "X"
             nonSpaceCounter += 1
 
@@ -37,8 +34,10 @@ def randomizeBlocks():
 
     finTiles = finTiles.replace(finTiles[0], "X")
     finTiles = finTiles.replace(finTiles[-1], "X")
-    if nonSpaceCounter >= 12:
-        finTiles = finTiles.replace(finTiles[0], " ")
+
+    if " " not in finTiles:
+        index = random.randint(2, 13)
+        finTiles = finTiles[:index] + " " + finTiles[index+1:]
 
     return finTiles
 
